@@ -163,22 +163,26 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
     return ethers.keccak256(ethers.toUtf8Bytes(String(d.getTime())));
   }
 
-  async function computeSeed() {
-    const daily = await getDailyBlockHash();
-    RUN_NONCE = Math.floor(Math.random() * 1e9);
-    SEED_HEX = ethers.keccak256(
-      ethers.concat([
-        ethers.getBytes(daily),
-        ethers.toUtf8Bytes(String(gameId || 0)),
-        ethers.toUtf8Bytes(String(RUN_NONCE))
-      ])
-    );
-    window.__BLITZ_RUN_NONCE = RUN_NONCE;
-    window.__BLITZ_SEED_HEX = SEED_HEX;
-    elSeed.textContent = SEED_HEX.slice(0, 10) + "…";
-    log("seed computed", { daily, RUN_NONCE, SEED_HEX });
-    return SEED_HEX;
-  }
+async function computeSeed() {
+  const daily = await getDailyBlockHash();
+
+  // deterministic: same for every restart, changes once per day
+  RUN_NONCE = 0;  
+
+  SEED_HEX = ethers.keccak256(ethers.concat([
+    ethers.getBytes(daily),
+    ethers.toUtf8Bytes(String(gameId || 0))
+  ]));
+
+  window.__BLITZ_RUN_NONCE = RUN_NONCE;
+  window.__BLITZ_SEED_HEX  = SEED_HEX;
+
+  elSeed.textContent = SEED_HEX.slice(0,10) + "…";
+  log("seed computed (deterministic per day)", { daily, gameId, SEED_HEX });
+
+  return SEED_HEX;
+}
+
 
   function rngFactory(seedHex) {
     let x = Number(BigInt(seedHex) % 4294967291n) || 123456789;
@@ -308,14 +312,21 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
     canvas.addEventListener("pointerdown", () => { if (!alive && signer && gameId) startNewRun(); });
   }
 
-  async function startNewRun() {
-    await computeSeed();
-    rand = rngFactory(SEED_HEX);
-    t = 0; alive = true; score = 0; speed = 5; gravity = 0.6; shield = 0; slowmo = 0;
-    obs.length = 0; pows.length = 0; for (let i = 0; i < 6; i++) spawnObstacle();
-    updateButtons();
-    requestAnimationFrame(step);
+async function startNewRun() {
+  if (!gameId) {
+    log("cannot start run: no GameID");
+    alert("Claim your Game ID first!");
+    return;
   }
+
+  await computeSeed();
+  rand = rngFactory(SEED_HEX);
+  t = 0; alive = true; score = 0; speed = 5; gravity = 0.6; shield = 0; slowmo = 0;
+  obs.length = 0; pows.length = 0; for (let i = 0; i < 6; i++) spawnObstacle();
+  updateButtons();
+  requestAnimationFrame(step);
+}
+
 
   // ===== Verify-only =====
   btnVerify.addEventListener("click", async () => {
