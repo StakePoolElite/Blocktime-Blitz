@@ -5,7 +5,7 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
   "use strict";
 
   // ===== CONFIG =====
-  const BUILD_HASH    = "v0.1";
+  const BUILD_HASH    = "v0.1.1";
   const CONTRACT_ADDR = "0xc93f91a0C605a1829e95aEe5097699c0Fb83A922";
   const MONAD_TESTNET = {
     chainId: "0x279f",
