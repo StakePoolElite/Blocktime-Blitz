@@ -302,39 +302,66 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
     catch (e) { log("dailyhash unreachable", String(e)); }
   })();
 
+// ===== Submit (verify → on-chain) =====
+btnSubmit.addEventListener("click", async () => {
+  if (!signer || !gameId) {
+    alert("Connect & claim Game ID first");
+    log("submit blocked: no signer or gameId", { signer: !!signer, gameId });
+    return;
+  }
 
-// … (everything above unchanged) …
+  const payload = { 
+    gameId, 
+    score: Math.floor(best), 
+    runNonce: RUN_NONCE, 
+    seed: SEED_HEX, 
+    build: BUILD_HASH, 
+    addr: wallet 
+  };
+  log("submit clicked: payload prepared", payload);
 
-  // ===== Submit (verify → on-chain) =====
-  btnSubmit.addEventListener("click", async () => {
-    if (!signer || !gameId) { alert("Connect & claim Game ID first"); return; }
-    const payload = { 
-      gameId, 
-      score: Math.floor(best), 
-      runNonce: RUN_NONCE, 
-      seed: SEED_HEX, 
-      build: BUILD_HASH, 
-      addr: wallet 
-    };
-    log("POST /verify (submit)", payload);
+  try {
+    // 1) Verify with backend
+    log("fetching /verify", payload);
+    const res = await fetch(`${API_BASES[0]}/games/blitz/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      mode: "cors",
+      cache: "no-store",
+      credentials: "omit"
+    });
 
-    try {
-      const { serverSig } = await postJSON("/games/blitz/verify", payload);
-      if (!serverSig) throw new Error("No serverSig");
-      log("verify ok (serverSig)", { serverSig: serverSig.slice(0, 12) + "…" });
+    log("verify response status", res.status);
+    const j = await res.json().catch(e => {
+      log("verify JSON parse failed", String(e));
+      return {};
+    });
+    log("verify response body", j);
 
-      const abi = ["function submit(uint256,uint256,bytes)"];
-      const c = new ethers.Contract(CONTRACT_ADDR, abi, signer);
-      const tx = await c.submit(gameId, payload.score, serverSig);
-      log("submitted on-chain", { tx: tx.hash });
-      alert("Submitted! Tx: " + tx.hash);
-
-      await loadLeaderboard(); // refresh after submit
-    } catch (e) {
-      log("submit error", String(e));
-      alert("Submit error: " + (e?.message || e));
+    if (!res.ok || !j.serverSig) {
+      log("verify failed", { status: res.status, body: j });
+      alert("Verify failed: " + res.status);
+      return;
     }
-  });
+
+    // 2) Submit on-chain
+    log("submitting to contract", { addr: CONTRACT_ADDR, sig: j.serverSig.slice(0,12)+"…" });
+    const abi = ["function submit(uint256,uint256,bytes)"];
+    const c = new ethers.Contract(CONTRACT_ADDR, abi, signer);
+    const tx = await c.submit(gameId, payload.score, j.serverSig);
+
+    log("tx sent", { hash: tx.hash });
+    alert("Submitted! Tx: " + tx.hash);
+
+    await loadLeaderboard(); // refresh leaderboard
+  } catch (e) {
+    console.error(e);
+    log("submit error", { message: e?.message || String(e), stack: e?.stack });
+    alert("Submit error: " + (e?.message || e));
+  }
+});
+
 
   // ===== Leaderboard =====
   async function loadLeaderboard(limit=10) {
