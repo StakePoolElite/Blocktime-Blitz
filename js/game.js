@@ -18,8 +18,6 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
   // Prefer your main domain first, then alternates and (optionally) local dev
   const API_BASES = [
     "https://losarchos.com",
-    "http://127.0.0.1:3000",                // dev only (may be blocked on https pages)
-    `http://${location.hostname}:3000`      // dev only
   ];
 
   // ===== DOM refs =====
