@@ -21,7 +21,6 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
   const $ = (id) => document.getElementById(id);
   const btnConnect = $("btnConnect");
   const btnID      = $("btnID");
-  const btnVerify  = $("btnVerifyOnly");
   const btnSubmit  = $("btnSubmit");
   const elScore    = $("score");
   const elBest     = $("best");
@@ -128,7 +127,6 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
   let alive = false;
   function updateButtons() {
     const hasIds = !!(signer && gameId);
-    btnVerify.disabled = !hasIds;
     btnSubmit.disabled = !(hasIds && !alive);
     btnID.textContent = gameId ? (alive ? "Playing…" : "Play Game") : "Claim Game ID";
     btnID.disabled = alive; // disable while in-game
@@ -191,10 +189,10 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height, ground = H - 40;
 
-  let t = 0, score = 0, best = 0, speed = 3, gravity = 0.5; // slower + lighter
+  let t = 0, score = 0, best = 0, speed = 3, gravity = 0.5;
   const player = { x: 90, y: ground, vy: 0, w: 28, h: 28, charging: false, jumpPower: 0 };
-  const obs = [], pows = [];
-  let shield = 0, slowmo = 0, jumpsLeft = 2;
+  const obs = [];
+  let jumpsLeft = 2;
 
   function spawnObstacle() {
     const R = rand || Math.random;
@@ -212,7 +210,6 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = "#0f1826"; ctx.fillRect(0, ground, W, 4);
     ctx.fillStyle = "#89d2ff"; ctx.fillRect(player.x, player.y - player.h, player.w, player.h);
-    if (shield > 0) { ctx.strokeStyle = "#89d2ff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(player.x+player.w/2, player.y-player.h/2, 20, 0, Math.PI*2); ctx.stroke(); }
     ctx.fillStyle = "#2b3d5c"; for (const o of obs) ctx.fillRect(o.x, ground - o.h, o.w, o.h);
 
     if (!alive) {
@@ -228,11 +225,8 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
     requestAnimationFrame(step);
     t++;
 
-    speed += 0.0004; // slower acceleration
-    gravity = 0.5 + Math.min(t / 10000, 0.3);
-
-    const curSpeed = slowmo > 0 ? speed * 0.6 : speed;
-    if (slowmo > 0) slowmo--;
+    speed += 0.0003; // slower acceleration
+    gravity = 0.5 + Math.min(t / 12000, 0.3);
 
     // player
     player.vy += gravity;
@@ -243,20 +237,19 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
 
     if (player.charging && player.y >= ground) player.jumpPower += 0.8;
 
-    // spawn cadence (slower)
+    // spawn cadence
     const R = rand || Math.random;
-    if (t % Math.floor(80 + 80 * R()) === 0) spawnObstacle();
+    if (t % Math.floor(100 + 80 * R()) === 0) spawnObstacle();
 
     // move obstacles
     for (let i = obs.length - 1; i >= 0; i--) {
-      const o = obs[i]; o.x -= curSpeed; if (o.x + o.w < 0) obs.splice(i, 1);
+      const o = obs[i]; o.x -= speed; if (o.x + o.w < 0) obs.splice(i, 1);
     }
 
     // collisions
     for (const o of obs) {
       if (rectsOverlap(player.x, player.y - player.h, player.w, player.h, o.x, ground - o.h, o.w, o.h)) {
-        if (shield > 0) { shield = 0; o.x = -9999; }
-        else { alive = false; updateButtons(); }
+        alive = false; updateButtons();
       }
     }
 
@@ -274,20 +267,18 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
     addEventListener("keydown", (e) => {
       if (alive && (e.code === "ArrowUp" || e.code === "KeyW")) {
         if (jumpsLeft > 0) {
-          player.vy = -(10 + Math.min(player.jumpPower / 5, 14)); // higher jump
+          player.vy = -(12 + Math.min(player.jumpPower / 5, 14)); // stronger jump
           player.charging = false; player.jumpPower = 0;
           jumpsLeft--;
         }
         e.preventDefault();
-      }
-    });
-    addEventListener("keyup", (e) => { if (alive && (e.code==="ArrowUp"||e.code==="KeyW")) player.charging=false; });
-    canvas.addEventListener("pointerdown", () => {
-      if (alive && jumpsLeft > 0) {
-        player.vy = -12; jumpsLeft--; player.charging=false; player.jumpPower=0;
       } else if (!alive && signer && gameId) startNewRun();
     });
-    addEventListener("keydown", () => { if (!alive && signer && gameId) startNewRun(); });
+    canvas.addEventListener("pointerdown", () => {
+      if (alive && jumpsLeft > 0) {
+        player.vy = -14; jumpsLeft--; player.charging=false; player.jumpPower=0;
+      } else if (!alive && signer && gameId) startNewRun();
+    });
   }
 
   // ===== Run start =====
@@ -297,9 +288,8 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
 
     await computeSeed();
     rand = rngFactory(SEED_HEX);
-    t = 0; alive = true; score = 0; speed = 3; gravity = 0.5; shield = 0; slowmo = 0; jumpsLeft = 2;
-    obs.length = 0; pows.length = 0;
-    for (let i = 0; i < 4; i++) spawnObstacle();
+    t = 0; alive = true; score = 0; speed = 3; gravity = 0.5; jumpsLeft = 2;
+    obs.length = 0; for (let i = 0; i < 3; i++) spawnObstacle();
     updateButtons();
     requestAnimationFrame(step);
   }
