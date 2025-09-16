@@ -302,4 +302,74 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
     catch (e) { log("dailyhash unreachable", String(e)); }
   })();
 
+
+// … (everything above unchanged) …
+
+  // ===== Submit (verify → on-chain) =====
+  btnSubmit.addEventListener("click", async () => {
+    if (!signer || !gameId) { alert("Connect & claim Game ID first"); return; }
+    const payload = { 
+      gameId, 
+      score: Math.floor(best), 
+      runNonce: RUN_NONCE, 
+      seed: SEED_HEX, 
+      build: BUILD_HASH, 
+      addr: wallet 
+    };
+    log("POST /verify (submit)", payload);
+
+    try {
+      const { serverSig } = await postJSON("/games/blitz/verify", payload);
+      if (!serverSig) throw new Error("No serverSig");
+      log("verify ok (serverSig)", { serverSig: serverSig.slice(0, 12) + "…" });
+
+      const abi = ["function submit(uint256,uint256,bytes)"];
+      const c = new ethers.Contract(CONTRACT_ADDR, abi, signer);
+      const tx = await c.submit(gameId, payload.score, serverSig);
+      log("submitted on-chain", { tx: tx.hash });
+      alert("Submitted! Tx: " + tx.hash);
+
+      await loadLeaderboard(); // refresh after submit
+    } catch (e) {
+      log("submit error", String(e));
+      alert("Submit error: " + (e?.message || e));
+    }
+  });
+
+  // ===== Leaderboard =====
+  async function loadLeaderboard(limit=10) {
+    try {
+      const res = await fetchJSON(`/games/blitz/leaderboard?limit=${limit}`);
+      renderLeaderboard(res);
+    } catch (e) {
+      log("leaderboard fetch failed", String(e));
+    }
+  }
+
+  function renderLeaderboard(entries) {
+    const el = $("leaderboard");
+    if (!entries || !entries.length) {
+      el.innerHTML = "<p>No scores yet</p>";
+      return;
+    }
+    let html = `<table><tr><th>#</th><th>Player</th><th>Score</th></tr>`;
+    entries.forEach((row, i) => {
+      html += `<tr><td>${i+1}</td><td>${row.username || "anon"}</td><td>${row.score}</td></tr>`;
+    });
+    html += "</table>";
+    el.innerHTML = html;
+  }
+
+  // ===== boot =====
+  (async () => {
+    addInputs();
+    drawFrame();
+    try { const j = await fetchJSON("/games/blitz/dailyhash"); log("dailyhash ok", j); }
+    catch (e) { log("dailyhash unreachable", String(e)); }
+
+    await loadLeaderboard();
+  })();
+
 })();
+
+

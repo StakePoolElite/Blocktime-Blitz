@@ -45,6 +45,31 @@
   <pre id="status">status: ready</pre>
 </div>
 
+<div id="hud">
+  <div>Score: <b id="score">0</b></div>
+  <div>Best: <b id="best">0</b></div>
+  <div>Seed: <b id="seedShort">—</b></div>
+  <div>GameID: <b id="gid">—</b></div>
+  <div>Build: <b id="build">v0.1</b></div>
+</div>
+
+<canvas id="game" width="900" height="300"></canvas>
+<p class="hint">Tip: Obstacles are seeded from today’s blockhash + GameID. Use double jump to survive!</p>
+
+<h2>Leaderboard</h2>
+<div id="leaderboard"></div>
+
+<pre id="status">status: ready</pre>
+
+<style>
+  #leaderboard { margin-top: 12px; color: var(--fg); }
+  #leaderboard table { width: 100%; border-collapse: collapse; }
+  #leaderboard th, #leaderboard td { padding: 4px 8px; border-bottom: 1px solid #2a3750; text-align: left; }
+  #leaderboard th { color: var(--muted); }
+</style>
+
+
+
 <!-- ESM only -->
 <script type="module">
   import "./js/game.js";
