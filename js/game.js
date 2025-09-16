@@ -257,7 +257,11 @@ async function computeSeed() {
     if (player.charging && player.y >= ground) player.jumpPower += 0.9;
     player.vy += gravity;
     player.y += player.vy;
-    if (player.y > ground) { player.y = ground; player.vy = 0; }
+    if (player.y >= ground) {
+        player.y = ground;
+        player.vy = 0;
+        jumpsLeft = 2; // reset jumps on landing
+    }
 
     // spawn cadence
     const R = rand || Math.random;
@@ -294,13 +298,33 @@ async function computeSeed() {
     drawFrame();
   }
 
+let jumpsLeft = 2;  // allow 2 jumps
+
+function resetRun() {
+  jumpsLeft = 2;
+  // …existing reset state…
+}
+
+addEventListener("keydown", (e) => {
+  if ((e.code === "ArrowUp" || e.code === "KeyW")) {
+    if (jumpsLeft > 0) {
+      player.vy = -(8 + Math.min(player.jumpPower / 6, 14));
+      player.charging = false;
+      player.jumpPower = 0;
+      jumpsLeft--;
+    }
+    e.preventDefault();
+  }
+});
+
+
   function addInputs() {
     addEventListener("keydown", (e) => {
       if (alive && (e.code === "ArrowUp" || e.code === "KeyW")) { player.charging = true; e.preventDefault(); }
     });
     addEventListener("keyup", (e) => {
       if (alive && (e.code === "ArrowUp" || e.code === "KeyW")) {
-        player.vy = -(6 + Math.min(player.jumpPower / 8, 12));
+        player.vy = -(8 + Math.min(player.jumpPower / 5, 16));
         player.charging = false; player.jumpPower = 0;
       }
     });
