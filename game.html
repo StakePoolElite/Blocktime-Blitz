@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Blocktime Blitz · Monad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{--bg:#0b0d12;--fg:#e8eefc;--muted:#93a1b5;--acc:#68b3ff}
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:14px/1.4 Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:900px;margin:0 auto;padding:16px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    h1{font-size:18px;margin:0}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button{background:var(--acc);border:0;color:#001;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    button.secondary{background:#1a2332;color:var(--fg);border:1px solid #2a3750}
+    #hud{display:flex;gap:12px;margin:8px 0;color:var(--muted);flex-wrap:wrap}
+    canvas{width:100%;height:auto;border-radius:12px;box-shadow:0 0 0 1px #1a2332, 0 10px 30px rgba(0,0,0,.35);background:linear-gradient(#0e1420,#0b0d12)}
+    .hint{color:var(--muted)}
+    #status{background:#0f1624;border:1px solid #1f2a40;border-radius:10px;padding:10px;margin-top:10px;max-height:210px;overflow:auto;font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;color:#b7c5e0}
+    #status b{color:#e8eefc}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Blocktime Blitz <span class="hint">· jump = ↑ / W</span></h1>
+    <div class="row">
+      <button id="btnConnect">Connect</button>
+      <button class="secondary" id="btnID">Claim Game ID</button>
+      <button class="secondary" id="btnVerifyOnly" disabled>Test Verify</button>
+      <button class="secondary" id="btnSubmit" disabled>Submit Score</button>
+    </div>
+  </header>
+
+  <div id="hud">
+    <div>Score: <b id="score">0</b></div>
+    <div>Best: <b id="best">0</b></div>
+    <div>Seed: <b id="seedShort">—</b></div>
+    <div>GameID: <b id="gid">—</b></div>
+    <div>Build: <b id="build">v0.1</b></div>
+  </div>
+
+  <canvas id="game" width="900" height="300"></canvas>
+  <p class="hint">Tip: obstacles & power-ups are seeded from today’s blockhash + GameID. Hold to charge a longer jump.</p>
+
+  <pre id="status">status: ready</pre>
+</div>
+
+<!-- ESM only -->
+<script type="module">
+  import "./js/game.js";
+  import "./js/gameid.js";  // optional; attaches window.GAMESID for future use
+</script>
+</body>
+</html>
