@@ -303,6 +303,7 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
   })();
 
 // ===== Submit (verify → on-chain) =====
+// ===== Submit (verify → on-chain) =====
 btnSubmit.addEventListener("click", async () => {
   if (!signer || !gameId) {
     alert("Connect & claim Game ID first");
