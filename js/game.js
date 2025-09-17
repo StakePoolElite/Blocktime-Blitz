@@ -37,22 +37,23 @@ import { ethers } from "https://esm.sh/ethers@6.13.2";
   };
 
   // ===== fetch helpers =====
-  async function fetchJSON(path) {
-    for (const base of API_BASES) {
-      try {
-        const r = await fetch(`${base}${path}?t=${Date.now()}`, {
-          mode: "cors", cache: "no-store", credentials: "omit"
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const j = await r.json();
-        log("fetchJSON OK", { base, path });
-        return j;
-      } catch (e) {
-        log("fetchJSON fail", { base, path, err: String(e) });
-      }
+async function fetchJSON(path) {
+  for (const base of API_BASES) {
+    try {
+      const sep = path.includes("?") ? "&" : "?";   // <— FIX
+      const r = await fetch(`${base}${path}${sep}t=${Date.now()}`, {
+        mode: "cors", cache: "no-store", credentials: "omit"
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      log("fetchJSON OK", { base, path });
+      return j;
+    } catch (e) {
+      log("fetchJSON fail", { base, path, err: String(e) });
     }
-    throw new Error("All API bases unreachable");
   }
+  throw new Error("All API bases unreachable");
+}
 
   // ===== Wallet =====
   let provider, signer, wallet;
